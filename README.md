@@ -1,6 +1,8 @@
 # sat-art
 Image visualizations of SAT formulas using Hilbert curve projections.
 
+![PHP SAT sentence](./examples/php.jpg)
+
 ## Compiling and Running:
 
 The default build target compiles for a linux system, though it should not be difficult to modify the Makefile to work for Windows or macOS.
