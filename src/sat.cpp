@@ -73,8 +73,9 @@ sat_sentence sat_sentence::from_dimacs(istream& is){
                 reduced_literals.push_back(lit);
             }
         }
-        
-        new_sentence.clauses.push_back(reduced_literals);
+        if(reduced_literals.size() > 0){        
+            new_sentence.clauses.push_back(reduced_literals);
+        }
     }
     return new_sentence;
 }

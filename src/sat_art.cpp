@@ -47,7 +47,7 @@ const string ARG_HELP = "\
         An output dimacs (.cnf) file to save a randomly generated sentence.     \n\
                                                                                 \n\
     img_out                                                                     \n\
-        The output image (optional)                                             \
+        The output image (optional). Both jpg and png formats are suported.     \
 ";   
 
 
@@ -181,7 +181,12 @@ int main(int argc, char** argv){
     
     // display image:
     img.display("SAT Art");
-     
+
+    // save image:
+    if(pa.img_out != ""){
+        img.save(pa.img_out.c_str());     
+        cout << "Saved image to \"" << pa.img_out <<"\"." << endl;
+    }
 
     return 0;
 
