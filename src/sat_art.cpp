@@ -52,7 +52,7 @@ const string ARG_HELP = "\
 
 
 // The maximum number of variables supported without projection:
-const int MAX_NUM_VARIABLES = 60; 
+const int MAX_N_VARIABLES = 30; 
 
 // color types:
 const unsigned char BLACK[3]    = { 0  , 0  , 0   };
@@ -79,7 +79,7 @@ struct parsed_args {
     string file_in = "";
     
     // flag to randomly generate a sentence:
-    bool random = true;
+    bool random = false;
 
     // the seed for a randomly generated sentence:
     string seed = "";
@@ -106,16 +106,22 @@ int main(int argc, char** argv){
 
     // parse args:
     parsed_args pa = parse_args(argc, argv);
-
-    // initialize a blank image:
-    llint img_size = 1<<((pa.n_variables+1)/2);
-    CImg<unsigned char> img(img_size,img_size,1,3); 
-    img.fill(0); 
-
+     
     // generate SAT sentence:
     sat_sentence sentence;
     if(pa.random){
+        
         sentence = sat_sentence::random_ksat(pa.n_clauses, pa.n_variables, pa.seed, 3);
+        
+        // save sentence (optional):
+        if(pa.file_out != ""){
+            ofstream file_out(pa.file_out);
+            if(!file_out){
+                arg_err(pa.file_out, "unable to write to file.");
+            }
+            sentence.to_dimacs(file_out, "Seed: " + pa.seed);
+            file_out.close();
+        }
     } else {
         ifstream file_in(pa.file_in);
         if(!file_in){
@@ -123,13 +129,32 @@ int main(int argc, char** argv){
         }
         sentence = sat_sentence::from_dimacs(file_in);
         file_in.close();
+        
+        pa.n_clauses = sentence.clauses.size();
+        pa.n_variables = sentence.num_variables();    
     }
     
+     // check that the number of variables is sane:
+    if(pa.n_variables > MAX_N_VARIABLES){
+        cerr << "Fatal error- memory limit possibly exceeded:\nnumber of variables ("
+             << pa.n_variables << ") cannot exceed MAX_N_VARIABLES"
+             << " (" << MAX_N_VARIABLES << ")." << endl;
+            exit(1);
+    }
+    
+
+    // initialize a blank image:
+    llint img_size = 1<<((pa.n_variables+1)/2);
+    llint img_size_x = 1<<(pa.n_variables/2);
+    CImg<unsigned char> img(img_size_x,img_size,1,3); 
+    img.fill(0); 
+
+ 
     // initialize a progress bar (big images may take some time to render):
     llint x, y;
     llint istep = 0;
     llint imax = 1<<pa.n_variables;
-    llint istep_max = imax / 100;
+    llint istep_max = imax / 1000;
     unsigned char color[3];
     pbar pb;
     pb.show();
@@ -141,13 +166,13 @@ int main(int argc, char** argv){
         double cmap_val = exp(-pa.beta * (double) n_unsat);
         color_interp(BLACK,GREEN,cmap_val, color);
         
-        d2xy(pa.n_variables/2,i,x,y);
+        d2xy((pa.n_variables+1)/2,i,x,y);
         int xp = x;
         int yp = y;
         img.draw_point(xp,yp,color);    
         
         ++istep;
-        if(istep >= imax){
+        if(istep >= istep_max){
             istep = 0;
             pb.progress = ((double) i / (double) imax);
             pb.show();
@@ -156,6 +181,7 @@ int main(int argc, char** argv){
     
     // display image:
     img.display("SAT Art");
+     
 
     return 0;
 
@@ -174,9 +200,10 @@ parsed_args parse_args(int argc, char** argv){
         // parse help:
         if(args[i] == "--help" || args[i] == "-h"){
             cout << VERSION << endl;
-            cout << ABOUT << endl;
-            cout << USAGE << endl;
-            cout << ARG_HELP << endl;
+            cout << ABOUT << endl << endl;
+            cout << USAGE << endl << endl;
+            cout << ARG_HELP << endl << endl;
+            exit(0);
         }
 
         // parse beta:
@@ -225,7 +252,7 @@ parsed_args parse_args(int argc, char** argv){
             ++i;
             if(i >= argc){ arg_err(args[i-1],"no number of variables given."); }
             istringstream iss(args[i]);
-            if(!(iss >> pa.n_clauses) || pa.n_variables <= 0){ 
+            if(!(iss >> pa.n_variables) || pa.n_variables <= 0){ 
                 arg_err(args[i], "invalid number of variables."); 
             }
         }
@@ -255,8 +282,8 @@ parsed_args parse_args(int argc, char** argv){
 
 void arg_err(string token, string msg, int exit_code){
     cerr << "Invalid arg \"" << token << "\": " << endl;
-    cerr << msg << endl;
-    cerr << USAGE << endl;
+    cerr << msg << endl << endl;
+    cerr << USAGE << endl << endl;
     exit(exit_code);
 }
 

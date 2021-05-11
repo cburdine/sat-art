@@ -22,6 +22,9 @@ struct sat_sentence {
     bool evaluate(llint assignment, int n, bool wrap_assignments=true);    
 
     int n_unsatisfied_clauses(llint assignment, int n, bool wrap_assignments=true);
+
+    void to_dimacs(ostream& dimacs_file, string comment = "");
+
 };
 
 ostream& operator<<(ostream& os, sat_sentence& s);
